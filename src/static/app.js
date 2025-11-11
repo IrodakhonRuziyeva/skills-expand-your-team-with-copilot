@@ -472,6 +472,46 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Function to generate share URL and text for an activity
+  function generateShareContent(activityName, activityDetails) {
+    const pageUrl = window.location.origin + window.location.pathname;
+    const formattedSchedule = formatSchedule(activityDetails);
+    const shareText = `Check out ${activityName} at Mergington High School! ${activityDetails.description} Schedule: ${formattedSchedule}`;
+    
+    return { pageUrl, shareText };
+  }
+
+  // Function to handle social sharing
+  function handleShare(platform, activityName, activityDetails) {
+    const { pageUrl, shareText } = generateShareContent(activityName, activityDetails);
+    const encodedUrl = encodeURIComponent(pageUrl);
+    const encodedText = encodeURIComponent(shareText);
+    const encodedActivityName = encodeURIComponent(activityName);
+    
+    let shareUrl = '';
+    
+    switch(platform) {
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+        break;
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+        break;
+      case 'whatsapp':
+        shareUrl = `https://wa.me/?text=${encodedText}%20${encodedUrl}`;
+        break;
+      case 'email':
+        const emailSubject = encodeURIComponent(`Check out ${activityName} at Mergington High School`);
+        const emailBody = encodeURIComponent(`${shareText}\n\nLearn more: ${pageUrl}`);
+        shareUrl = `mailto:?subject=${emailSubject}&body=${emailBody}`;
+        break;
+    }
+    
+    if (shareUrl) {
+      window.open(shareUrl, '_blank', 'width=600,height=400');
+    }
+  }
+
   // Function to render a single activity card
   function renderActivityCard(name, details) {
     const activityCard = document.createElement("div");
@@ -519,6 +559,25 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
+    // Create share buttons
+    const shareButtons = `
+      <div class="share-buttons">
+        <span class="share-label">Share:</span>
+        <button class="share-btn facebook-btn" data-activity="${name}" data-platform="facebook" title="Share on Facebook">
+          <span class="share-icon">f</span>
+        </button>
+        <button class="share-btn twitter-btn" data-activity="${name}" data-platform="twitter" title="Share on Twitter">
+          <span class="share-icon">𝕏</span>
+        </button>
+        <button class="share-btn whatsapp-btn" data-activity="${name}" data-platform="whatsapp" title="Share on WhatsApp">
+          <span class="share-icon">💬</span>
+        </button>
+        <button class="share-btn email-btn" data-activity="${name}" data-platform="email" title="Share via Email">
+          <span class="share-icon">✉</span>
+        </button>
+      </div>
+    `;
+
     activityCard.innerHTML = `
       ${tagHtml}
       <h4>${name}</h4>
@@ -528,6 +587,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <span class="tooltip-text">Regular meetings at this time throughout the semester</span>
       </p>
       ${capacityIndicator}
+      ${shareButtons}
       <div class="participants-list">
         <h5>Current Participants:</h5>
         <ul>
@@ -575,6 +635,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const deleteButtons = activityCard.querySelectorAll(".delete-participant");
     deleteButtons.forEach((button) => {
       button.addEventListener("click", handleUnregister);
+    });
+
+    // Add click handlers for share buttons
+    const shareButtonsElements = activityCard.querySelectorAll(".share-btn");
+    shareButtonsElements.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        e.preventDefault();
+        const platform = button.dataset.platform;
+        const activityName = button.dataset.activity;
+        handleShare(platform, activityName, details);
+      });
     });
 
     // Add click handler for register button (only when authenticated)
